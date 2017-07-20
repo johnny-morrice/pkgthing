@@ -66,6 +66,12 @@ func (thing *PkgThing) Get(info PackageInfo) (Package, error) {
 		return Package{}, errors.Wrap(err, failMsg)
 	}
 
+	err = thing.loadPackageData(&pkg)
+
+	if err != nil {
+		return Package{}, errors.Wrap(err, failMsg)
+	}
+
 	return pkg, nil
 }
 
@@ -116,6 +122,10 @@ func (thing *PkgThing) Search(term PackageSearchTerm) ([]PackageInfo, error) {
 	}
 
 	return info, nil
+}
+
+func (thing *PkgThing) loadPackageData(pkg *Package) error {
+	panic("not implemented")
 }
 
 func (thing *PkgThing) sendQueryWithBuilder(builder queryBuilder) (api.Response, error) {
@@ -177,7 +187,7 @@ func (builder *addBuilder) buildQuery() (*query.Query, error) {
 	pkg := builder.pkg
 	queryFormat := "join %s rows (@key=%s, metadata=\"%s\")"
 	metadata := encodeMetaDataAsText(pkg.MetaData)
-	queryText := fmt.Sprintf(queryFormat, packageTable(pkg.System), pkg.Name, metadata)
+	queryText := fmt.Sprintf(queryFormat, systemTable(pkg.System), pkg.Name, metadata)
 	return query.Compile(queryText)
 }
 
@@ -193,7 +203,7 @@ func (builder *getBuilder) setPackageInfo(info PackageInfo) {
 func (builder *getBuilder) buildQuery() (*query.Query, error) {
 	info := builder.info
 	queryFormat := "select %s where str_eq(@key, \"%s\")"
-	queryText := fmt.Sprintf(queryFormat, packageTable(info.System), info.Name)
+	queryText := fmt.Sprintf(queryFormat, systemTable(info.System), info.Name)
 	return query.Compile(queryText)
 }
 
@@ -219,22 +229,22 @@ func (builder *searchBuilder) buildQuery() (*query.Query, error) {
 // FIXME Sprintf is security hole. We need parametrized queries from godless 0.19.0.
 func (builder *searchBuilder) systemQuery() (*query.Query, error) {
 	queryFormat := "select %s"
-	queryText := fmt.Sprintf(queryFormat, packageTable(builder.term.System))
+	queryText := fmt.Sprintf(queryFormat, systemTable(builder.term.System))
 	return query.Compile(queryText)
 }
 
 // FIXME Sprintf is security hole. We need parametrized queries from godless 0.19.0.
 func (builder *searchBuilder) exactNameQuery() (*query.Query, error) {
 	queryFormat := "select %s where str_wildcard(@key, \"%s\")"
-	queryText := fmt.Sprintf(queryFormat, packageTable(builder.term.System), builder.term.SearchTerm)
+	queryText := fmt.Sprintf(queryFormat, systemTable(builder.term.System), builder.term.SearchTerm)
 	return query.Compile(queryText)
 }
 
-func readPackageInfo(resp api.Response) ([]PackageInfo, error) {
+func readPackage(resp api.Response) (Package, error) {
 	panic("not implemented")
 }
 
-func readPackage(resp api.Response) (Package, error) {
+func readPackageInfo(resp api.Response) ([]PackageInfo, error) {
 	panic("not implemented")
 }
 
@@ -242,6 +252,6 @@ func encodeMetaDataAsText(metaData []MetaDataEntry) string {
 	panic("not implemented")
 }
 
-func packageTable(system string) string {
-	return "package_" + system
+func systemTable(system string) string {
+	return "system" + system
 }
