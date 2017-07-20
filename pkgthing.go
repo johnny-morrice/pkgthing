@@ -46,7 +46,6 @@ type PackageSearchTerm struct {
 type PkgThing struct {
 }
 
-// TODO could get directly from IPFS if info.IpfsPath set.
 func (thing *PkgThing) Get(info PackageInfo) (Package, error) {
 	const failMsg = "Get failed"
 
