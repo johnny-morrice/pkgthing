@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/johnny-morrice/godless/api"
+	"github.com/johnny-morrice/godless/crdt"
 	"github.com/johnny-morrice/godless/query"
 )
 
@@ -24,8 +25,8 @@ type PackageInfo struct {
 }
 
 type MetaDataEntry struct {
-	MetaDataKey    string
-	MetaDataValues []string
+	MetaDataKey   string
+	MetaDataValue string
 }
 
 type SearchKey uint8
@@ -60,26 +61,35 @@ func (thing *PkgThing) Get(info PackageInfo) (Package, error) {
 		return Package{}, errors.Wrap(err, failMsg)
 	}
 
-	pkg, err := readPackage(resp)
+	pack, err := readPackage(resp)
 
 	if err != nil {
 		return Package{}, errors.Wrap(err, failMsg)
 	}
 
-	err = thing.loadPackageData(&pkg)
+	err = thing.loadPackageData(&pack)
 
 	if err != nil {
 		return Package{}, errors.Wrap(err, failMsg)
 	}
 
-	return pkg, nil
+	return pack, nil
 }
 
-func (thing *PkgThing) Add(pkg Package) (PackageInfo, error) {
+func (thing *PkgThing) Add(pack Package) (PackageInfo, error) {
 	const failMsg = "Add failed"
 
+	path, err := thing.addIpfsBlob(pack.Blob)
+
+	if err != nil {
+		return PackageInfo{}, errors.Wrap(err, failMsg)
+	}
+
+	thing.logIpfsPath(path)
+
+	pack.IpfsPath = path
 	builder := &addBuilder{}
-	builder.setPackage(pkg)
+	builder.setPackage(pack)
 
 	resp, err := thing.sendQueryWithBuilder(builder)
 
@@ -89,13 +99,7 @@ func (thing *PkgThing) Add(pkg Package) (PackageInfo, error) {
 		return PackageInfo{}, errors.Wrap(err, failMsg)
 	}
 
-	path, err := thing.addIpfsBlob(pkg.Blob)
-
-	if err != nil {
-		return PackageInfo{}, errors.Wrap(err, failMsg)
-	}
-
-	info := pkg.PackageInfo
+	info := pack.PackageInfo
 	info.IpfsPath = path
 
 	return info, nil
@@ -124,7 +128,7 @@ func (thing *PkgThing) Search(term PackageSearchTerm) ([]PackageInfo, error) {
 	return info, nil
 }
 
-func (thing *PkgThing) loadPackageData(pkg *Package) error {
+func (thing *PkgThing) loadPackageData(pack *Package) error {
 	panic("not implemented")
 }
 
@@ -148,6 +152,10 @@ func (thing *PkgThing) addIpfsBlob(blob []byte) (string, error) {
 
 func (thing *PkgThing) logResponse(resp api.Response) {
 	log.Println(resp)
+}
+
+func (thing *PkgThing) logIpfsPath(path string) {
+	log.Printf("Added to IPFS at: %s", path)
 }
 
 type KeyType uint16
@@ -175,20 +183,39 @@ type queryBuilder interface {
 }
 
 type addBuilder struct {
-	pkg Package
+	pack Package
 }
 
-func (builder *addBuilder) setPackage(pkg Package) {
-	builder.pkg = pkg
+func (builder *addBuilder) setPackage(pack Package) {
+	builder.pack = pack
 }
 
-// FIXME Sprintf is security hole. We need parametrized queries from godless 0.19.0.
+// FIXME working directly with query structure is awful.
 func (builder *addBuilder) buildQuery() (*query.Query, error) {
-	pkg := builder.pkg
-	queryFormat := "join %s rows (@key=%s, metadata=\"%s\")"
-	metadata := encodeMetaDataAsText(pkg.MetaData)
-	queryText := fmt.Sprintf(queryFormat, systemTable(pkg.System), pkg.Name, metadata)
-	return query.Compile(queryText)
+	table := systemTable(builder.pack.System)
+	rowKey := builder.pack.Name
+
+	entries := map[crdt.EntryName]crdt.PointText{
+		"datapath": crdt.PointText(builder.pack.IpfsPath),
+	}
+	row := query.QueryRowJoin{
+		RowKey:  crdt.RowName(rowKey),
+		Entries: entries,
+	}
+
+	for _, meta := range builder.pack.MetaData {
+		key := metaKey(meta.MetaDataKey)
+		entries[key] = crdt.PointText(meta.MetaDataValue)
+	}
+
+	q := &query.Query{
+		OpCode:   query.JOIN,
+		TableKey: crdt.TableName(table),
+		Join: query.QueryJoin{
+			Rows: []query.QueryRowJoin{row},
+		},
+	}
+	return q, nil
 }
 
 type getBuilder struct {
@@ -248,10 +275,11 @@ func readPackageInfo(resp api.Response) ([]PackageInfo, error) {
 	panic("not implemented")
 }
 
-func encodeMetaDataAsText(metaData []MetaDataEntry) string {
-	panic("not implemented")
+func systemTable(system string) crdt.TableName {
+	return crdt.TableName("system" + system)
 }
 
-func systemTable(system string) string {
-	return "system" + system
+// TODO should be a method probably.
+func metaKey(metaDataKey string) crdt.EntryName {
+	return crdt.EntryName("meta_" + metaDataKey)
 }
