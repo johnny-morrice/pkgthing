@@ -1,6 +1,7 @@
 package pkgthing
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/pkg/errors"
@@ -30,12 +31,14 @@ type MetaDataEntry struct {
 type SearchKey uint8
 
 const (
-	NameExact = SearchKey(iota)
+	SEARCH_NAME_WILDCARD = SearchKey(iota)
+	SEARCH_SYSTEM
 )
 
 type PackageSearchTerm struct {
 	SearchKey  SearchKey
 	SearchTerm string
+	System     string
 	Keys       []KeyReference
 }
 
@@ -162,36 +165,69 @@ type queryBuilder interface {
 }
 
 type addBuilder struct {
+	pkg Package
 }
 
 func (builder *addBuilder) setPackage(pkg Package) {
-	panic("not implemented")
+	builder.pkg = pkg
 }
 
+// FIXME Sprintf is security hole. We need parametrized queries from godless 0.19.0.
 func (builder *addBuilder) buildQuery() (*query.Query, error) {
-	panic("not implemented")
+	pkg := builder.pkg
+	queryFormat := "join %s rows (@key=%s, metadata=\"%s\")"
+	metadata := encodeMetaDataAsText(pkg.MetaData)
+	queryText := fmt.Sprintf(queryFormat, packageTable(pkg.System), pkg.Name, metadata)
+	return query.Compile(queryText)
 }
 
 type getBuilder struct {
+	info PackageInfo
 }
 
 func (builder *getBuilder) setPackageInfo(info PackageInfo) {
-	panic("not implemented")
+	builder.info = info
 }
 
+// FIXME Sprintf is security hole. We need parametrized queries from godless 0.19.0.
 func (builder *getBuilder) buildQuery() (*query.Query, error) {
-	panic("not implemented")
+	info := builder.info
+	queryFormat := "select %s where str_eq(@key, \"%s\")"
+	queryText := fmt.Sprintf(queryFormat, packageTable(info.System), info.Name)
+	return query.Compile(queryText)
 }
 
 type searchBuilder struct {
+	term PackageSearchTerm
 }
 
 func (builder *searchBuilder) setSearchTerm(term PackageSearchTerm) {
-	panic("not implemented")
+	builder.term = term
 }
 
 func (builder *searchBuilder) buildQuery() (*query.Query, error) {
-	panic("not implemented")
+	switch builder.term.SearchKey {
+	case SEARCH_SYSTEM:
+		return builder.systemQuery()
+	case SEARCH_NAME_WILDCARD:
+		return builder.exactNameQuery()
+	default:
+		return nil, fmt.Errorf("Unknown SearchKey: %v", builder.term.SearchKey)
+	}
+}
+
+// FIXME Sprintf is security hole. We need parametrized queries from godless 0.19.0.
+func (builder *searchBuilder) systemQuery() (*query.Query, error) {
+	queryFormat := "select %s"
+	queryText := fmt.Sprintf(queryFormat, packageTable(builder.term.System))
+	return query.Compile(queryText)
+}
+
+// FIXME Sprintf is security hole. We need parametrized queries from godless 0.19.0.
+func (builder *searchBuilder) exactNameQuery() (*query.Query, error) {
+	queryFormat := "select %s where str_wildcard(@key, \"%s\")"
+	queryText := fmt.Sprintf(queryFormat, packageTable(builder.term.System), builder.term.SearchTerm)
+	return query.Compile(queryText)
 }
 
 func readPackageInfo(resp api.Response) ([]PackageInfo, error) {
@@ -200,4 +236,12 @@ func readPackageInfo(resp api.Response) ([]PackageInfo, error) {
 
 func readPackage(resp api.Response) (Package, error) {
 	panic("not implemented")
+}
+
+func encodeMetaDataAsText(metaData []MetaDataEntry) string {
+	panic("not implemented")
+}
+
+func packageTable(system string) string {
+	return "package_" + system
 }
