@@ -40,7 +40,29 @@ type PkgThing struct {
 }
 
 func (thing *PkgThing) Get(info PackageInfo) (Package, error) {
-	panic("not implemented")
+	const failMsg = "Get failed"
+
+	builder := &getBuilder{}
+	err := builder.setPackageInfo(info)
+
+	if err != nil {
+		return Package{}, errors.Wrap(err, failMsg)
+	}
+
+	query := builder.buildQuery()
+	resp, err := thing.sendQuery(query)
+
+	if err != nil {
+		return Package{}, errors.Wrap(err, failMsg)
+	}
+
+	pkg, err := readPackage(resp)
+
+	if err != nil {
+		return Package{}, errors.Wrap(err, failMsg)
+	}
+
+	return pkg, nil
 }
 
 func (thing *PkgThing) Add(pkg Package) (PackageInfo, error) {
@@ -58,7 +80,6 @@ func (thing *PkgThing) Search(term PackageSearchTerm) ([]PackageInfo, error) {
 	}
 
 	query := builder.buildQuery()
-
 	resp, err := thing.sendQuery(query)
 
 	if err != nil {
@@ -98,6 +119,17 @@ type Signature struct {
 	Data        SignatureBlob
 }
 
+type getBuilder struct {
+}
+
+func (builder *getBuilder) setPackageInfo(info PackageInfo) error {
+	panic("not implemented")
+}
+
+func (builder *getBuilder) buildQuery() *query.Query {
+	panic("not implemented")
+}
+
 type searchBuilder struct {
 }
 
@@ -110,5 +142,9 @@ func (builder *searchBuilder) buildQuery() *query.Query {
 }
 
 func readPackageInfo(resp api.Response) ([]PackageInfo, error) {
+	panic("not implemented")
+}
+
+func readPackage(resp api.Response) (Package, error) {
 	panic("not implemented")
 }
