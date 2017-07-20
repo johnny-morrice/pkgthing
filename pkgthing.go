@@ -47,11 +47,7 @@ func (thing *PkgThing) Get(info PackageInfo) (Package, error) {
 	const failMsg = "Get failed"
 
 	builder := &getBuilder{}
-	err := builder.setPackageInfo(info)
-
-	if err != nil {
-		return Package{}, errors.Wrap(err, failMsg)
-	}
+	builder.setPackageInfo(info)
 
 	resp, err := thing.sendQueryWithBuilder(builder)
 
@@ -74,11 +70,7 @@ func (thing *PkgThing) Add(pkg Package) (PackageInfo, error) {
 	const failMsg = "Add failed"
 
 	builder := &addBuilder{}
-	err := builder.setPackage(pkg)
-
-	if err != nil {
-		return PackageInfo{}, errors.Wrap(err, failMsg)
-	}
+	builder.setPackage(pkg)
 
 	resp, err := thing.sendQueryWithBuilder(builder)
 
@@ -104,11 +96,7 @@ func (thing *PkgThing) Search(term PackageSearchTerm) ([]PackageInfo, error) {
 	const failMsg = "Search failed"
 
 	builder := &searchBuilder{}
-	err := builder.setSearchTerm(term)
-
-	if err != nil {
-		return nil, errors.Wrap(err, failMsg)
-	}
+	builder.setSearchTerm(term)
 
 	resp, err := thing.sendQueryWithBuilder(builder)
 
@@ -128,7 +116,12 @@ func (thing *PkgThing) Search(term PackageSearchTerm) ([]PackageInfo, error) {
 }
 
 func (thing *PkgThing) sendQueryWithBuilder(builder queryBuilder) (api.Response, error) {
-	query := builder.buildQuery()
+	query, err := builder.buildQuery()
+
+	if err != nil {
+		return api.RESPONSE_FAIL, err
+	}
+
 	return thing.sendQuery(query)
 }
 
@@ -165,39 +158,39 @@ type Signature struct {
 }
 
 type queryBuilder interface {
-	buildQuery() *query.Query
+	buildQuery() (*query.Query, error)
 }
 
 type addBuilder struct {
 }
 
-func (builder *addBuilder) setPackage(pkg Package) error {
+func (builder *addBuilder) setPackage(pkg Package) {
 	panic("not implemented")
 }
 
-func (builder *addBuilder) buildQuery() *query.Query {
+func (builder *addBuilder) buildQuery() (*query.Query, error) {
 	panic("not implemented")
 }
 
 type getBuilder struct {
 }
 
-func (builder *getBuilder) setPackageInfo(info PackageInfo) error {
+func (builder *getBuilder) setPackageInfo(info PackageInfo) {
 	panic("not implemented")
 }
 
-func (builder *getBuilder) buildQuery() *query.Query {
+func (builder *getBuilder) buildQuery() (*query.Query, error) {
 	panic("not implemented")
 }
 
 type searchBuilder struct {
 }
 
-func (builder *searchBuilder) setSearchTerm(term PackageSearchTerm) error {
+func (builder *searchBuilder) setSearchTerm(term PackageSearchTerm) {
 	panic("not implemented")
 }
 
-func (builder *searchBuilder) buildQuery() *query.Query {
+func (builder *searchBuilder) buildQuery() (*query.Query, error) {
 	panic("not implemented")
 }
 
