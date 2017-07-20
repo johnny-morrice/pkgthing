@@ -1,6 +1,8 @@
 package pkgthing
 
 import (
+	"log"
+
 	"github.com/pkg/errors"
 
 	"github.com/johnny-morrice/godless/api"
@@ -15,6 +17,7 @@ type Package struct {
 type PackageInfo struct {
 	Name       string
 	System     string
+	IpfsPath   string
 	MetaData   []MetaDataEntry
 	Signatures []Signature
 }
@@ -39,6 +42,7 @@ type PackageSearchTerm struct {
 type PkgThing struct {
 }
 
+// TODO could get directly from IPFS if info.IpfsPath set.
 func (thing *PkgThing) Get(info PackageInfo) (Package, error) {
 	const failMsg = "Get failed"
 
@@ -49,8 +53,9 @@ func (thing *PkgThing) Get(info PackageInfo) (Package, error) {
 		return Package{}, errors.Wrap(err, failMsg)
 	}
 
-	query := builder.buildQuery()
-	resp, err := thing.sendQuery(query)
+	resp, err := thing.sendQueryWithBuilder(builder)
+
+	thing.logResponse(resp)
 
 	if err != nil {
 		return Package{}, errors.Wrap(err, failMsg)
@@ -66,7 +71,33 @@ func (thing *PkgThing) Get(info PackageInfo) (Package, error) {
 }
 
 func (thing *PkgThing) Add(pkg Package) (PackageInfo, error) {
-	panic("not implemented")
+	const failMsg = "Add failed"
+
+	builder := &addBuilder{}
+	err := builder.setPackage(pkg)
+
+	if err != nil {
+		return PackageInfo{}, errors.Wrap(err, failMsg)
+	}
+
+	resp, err := thing.sendQueryWithBuilder(builder)
+
+	thing.logResponse(resp)
+
+	if err != nil {
+		return PackageInfo{}, errors.Wrap(err, failMsg)
+	}
+
+	path, err := thing.addIpfsBlob(pkg.Blob)
+
+	if err != nil {
+		return PackageInfo{}, errors.Wrap(err, failMsg)
+	}
+
+	info := pkg.PackageInfo
+	info.IpfsPath = path
+
+	return info, nil
 }
 
 func (thing *PkgThing) Search(term PackageSearchTerm) ([]PackageInfo, error) {
@@ -79,8 +110,9 @@ func (thing *PkgThing) Search(term PackageSearchTerm) ([]PackageInfo, error) {
 		return nil, errors.Wrap(err, failMsg)
 	}
 
-	query := builder.buildQuery()
-	resp, err := thing.sendQuery(query)
+	resp, err := thing.sendQueryWithBuilder(builder)
+
+	thing.logResponse(resp)
 
 	if err != nil {
 		return nil, errors.Wrap(err, failMsg)
@@ -95,8 +127,21 @@ func (thing *PkgThing) Search(term PackageSearchTerm) ([]PackageInfo, error) {
 	return info, nil
 }
 
+func (thing *PkgThing) sendQueryWithBuilder(builder queryBuilder) (api.Response, error) {
+	query := builder.buildQuery()
+	return thing.sendQuery(query)
+}
+
 func (thing *PkgThing) sendQuery(query *query.Query) (api.Response, error) {
 	panic("not implemented")
+}
+
+func (thing *PkgThing) addIpfsBlob(blob []byte) (string, error) {
+	panic("not implemented")
+}
+
+func (thing *PkgThing) logResponse(resp api.Response) {
+	log.Println(resp)
 }
 
 type KeyType uint16
@@ -117,6 +162,21 @@ type KeyReference struct {
 type Signature struct {
 	Fingerprint KeyReference
 	Data        SignatureBlob
+}
+
+type queryBuilder interface {
+	buildQuery() *query.Query
+}
+
+type addBuilder struct {
+}
+
+func (builder *addBuilder) setPackage(pkg Package) error {
+	panic("not implemented")
+}
+
+func (builder *addBuilder) buildQuery() *query.Query {
+	panic("not implemented")
 }
 
 type getBuilder struct {
