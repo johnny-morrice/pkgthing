@@ -22,10 +22,13 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/johnny-morrice/pkgthing"
 )
 
 var cfgFile string
@@ -47,6 +50,25 @@ func Execute() {
 
 var ipfsUrl string
 var godlessUrl string
+
+func makePkgthing() pkgthing.PackageManager {
+	ipfs := pkgthing.MakeIpfsStorage(ipfsUrl)
+	godless, err := pkgthing.MakeRemoteGodlessClient(godlessUrl)
+
+	if err != nil {
+		die(err)
+	}
+
+	options := pkgthing.Options{
+		Store:   ipfs,
+		Godless: godless,
+	}
+	return pkgthing.New(options)
+}
+
+func die(err error) {
+	log.Fatal(err)
+}
 
 func init() {
 	cobra.OnInitialize(initConfig)
