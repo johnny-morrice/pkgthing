@@ -5,6 +5,6 @@ import (
 )
 
 type ContentAddressableStorage interface {
-	Add(data io.Reader) string
-	Cat(hash string) io.Reader
+	Add(data io.Reader) (string, error)
+	Cat(hash string) (io.ReadCloser, error)
 }

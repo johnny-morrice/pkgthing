@@ -98,18 +98,64 @@ func (builder *searchBuilder) exactNameQuery() (*query.Query, error) {
 }
 
 func readPackage(resp api.Response) (Package, error) {
-	panic("not implemented")
+	info, err := readPackageInfo(resp)
+
+	if err != nil {
+		return Package{}, err
+	}
+
+	if len(info) != 1 {
+		return Package{}, fmt.Errorf("Expected exactly 1 PackageInfo but received: %d", len(info))
+	}
+
+	pack := Package{
+		PackageInfo: info[0],
+	}
+
+	return pack, nil
 }
 
 func readPackageInfo(resp api.Response) ([]PackageInfo, error) {
-	panic("not implemented")
+	allInfo := []PackageInfo{}
+
+	resp.Namespace.ForeachRow(func(t crdt.TableName, r crdt.RowName, row crdt.Row) {
+		// TODO return the error
+		system, err := readSystemTableName(t)
+
+		if err != nil {
+			return
+		}
+
+		info := PackageInfo{
+			System: system,
+			Name:   string(r),
+		}
+
+		allInfo = append(allInfo, info)
+	})
+
+	return allInfo, nil
+}
+
+func readSystemTableName(tableName crdt.TableName) (string, error) {
+	var system string
+	_, err := fmt.Scanf(systemTablePrefix+"%s", &system)
+
+	if err != nil {
+		return "", err
+	}
+
+	return system, nil
 }
 
 func systemTable(system string) crdt.TableName {
-	return crdt.TableName("system" + system)
+	return crdt.TableName(systemTablePrefix + system)
 }
 
 // TODO should be a method probably.
 func metaKey(metaDataKey string) crdt.EntryName {
-	return crdt.EntryName("meta_" + metaDataKey)
+	return crdt.EntryName(metaDataPrefix + metaDataKey)
 }
+
+const systemTablePrefix = "system_"
+const metaDataPrefix = "meta_"

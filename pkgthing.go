@@ -1,6 +1,8 @@
 package pkgthing
 
 import (
+	"bytes"
+	"io/ioutil"
 	"log"
 
 	"github.com/pkg/errors"
@@ -11,7 +13,7 @@ import (
 
 type Package struct {
 	PackageInfo
-	Blob []byte
+	Data []byte
 }
 
 type PackageInfo struct {
@@ -94,13 +96,11 @@ func (thing *pkgthing) Get(info PackageInfo) (Package, error) {
 func (thing *pkgthing) Add(pack Package) (PackageInfo, error) {
 	const failMsg = "Add failed"
 
-	path, err := thing.addIpfsBlob(pack.Blob)
+	path, err := thing.addIpfsBlob(pack.Data)
 
 	if err != nil {
 		return PackageInfo{}, errors.Wrap(err, failMsg)
 	}
-
-	thing.logIpfsPath(path)
 
 	pack.IpfsPath = path
 	builder := &addBuilder{}
@@ -144,7 +144,27 @@ func (thing *pkgthing) Search(term PackageSearchTerm) ([]PackageInfo, error) {
 }
 
 func (thing *pkgthing) loadPackageData(pack *Package) error {
-	panic("not implemented")
+	reader, err := thing.Store.Cat(pack.IpfsPath)
+
+	if err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadAll(reader)
+
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		err := reader.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
+
+	pack.Data = data
+	return nil
 }
 
 func (thing *pkgthing) sendQueryWithBuilder(builder queryBuilder) (api.Response, error) {
@@ -158,17 +178,15 @@ func (thing *pkgthing) sendQueryWithBuilder(builder queryBuilder) (api.Response,
 }
 
 func (thing *pkgthing) sendQuery(query *query.Query) (api.Response, error) {
-	panic("not implemented")
+	request := api.MakeQueryRequest(query)
+	return thing.Godless.Send(request)
 }
 
 func (thing *pkgthing) addIpfsBlob(blob []byte) (string, error) {
-	panic("not implemented")
+	reader := bytes.NewReader(blob)
+	return thing.Store.Add(reader)
 }
 
 func (thing *pkgthing) logResponse(resp api.Response) {
 	log.Println(resp)
-}
-
-func (thing *pkgthing) logIpfsPath(path string) {
-	log.Printf("Added to IPFS at: %s", path)
 }

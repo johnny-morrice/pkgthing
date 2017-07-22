@@ -33,16 +33,7 @@ var cfgFile string
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "pkgthing",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-// Uncomment the following line if your bare application
-// has an action associated with it:
-//	Run: func(cmd *cobra.Command, args []string) { },
+	Short: "A simple peer-to-peer package manager",
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -54,6 +45,9 @@ func Execute() {
 	}
 }
 
+var ipfsUrl string
+var godlessUrl string
+
 func init() {
 	cobra.OnInitialize(initConfig)
 
@@ -62,10 +56,13 @@ func init() {
 	// will be global for your application.
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.pkgthing.yaml)")
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	RootCmd.PersistentFlags().StringVar(&ipfsUrl, "ipfs", DEFAULT_IPFS_URL, "IPFS API URL")
+	RootCmd.PersistentFlags().StringVar(&godlessUrl, "godless", DEFAULT_GODLESS_URL, "Godless API URL")
 }
+
+// TODO should live in godless
+const DEFAULT_GODLESS_URL = "http://localhost:8085"
+const DEFAULT_IPFS_URL = "http://localhost:5001"
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
@@ -74,8 +71,8 @@ func initConfig() {
 	}
 
 	viper.SetConfigName(".pkgthing") // name of config file (without extension)
-	viper.AddConfigPath("$HOME")  // adding home directory as first search path
-	viper.AutomaticEnv()          // read in environment variables that match
+	viper.AddConfigPath("$HOME")     // adding home directory as first search path
+	viper.AutomaticEnv()             // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
