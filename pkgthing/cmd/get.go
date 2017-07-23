@@ -21,6 +21,9 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -37,13 +40,41 @@ var getCmd = &cobra.Command{
 		info := makePackageInfo()
 
 		pkgthing := makePkgthing()
-		pkgthing.Get(info)
+		pack, err := pkgthing.Get(info)
+
+		if err != nil {
+			die(err)
+		}
+
+		fmt.Println(pack.PackageInfo)
+
+		writePackageFile(pack)
 	},
 }
 
 func validateGetArgs() {
-	if name == "" || system == "" {
-		die(errors.New("Must supply name and system"))
+	ok := name != ""
+	ok = ok && system != ""
+	ok = ok && packageFilePath != ""
+
+	if !ok {
+		die(errors.New("Must supply name, system, and file"))
+	}
+}
+
+func writePackageFile(pack pkgthing.Package) {
+	file, err := os.Create(packageFilePath)
+
+	if err != nil {
+		die(err)
+	}
+
+	defer file.Close()
+
+	_, err = file.Write(pack.Data)
+
+	if err != nil {
+		die(err)
 	}
 }
 
@@ -55,7 +86,8 @@ func makePackageInfo() pkgthing.PackageInfo {
 }
 
 func init() {
-	getCmd.PersistentFlags().StringVar(&name, "name", "", "Package name")
-
 	RootCmd.AddCommand(getCmd)
+
+	getCmd.PersistentFlags().StringVar(&name, "name", "", "Package name")
+	getCmd.PersistentFlags().StringVar(&packageFilePath, "file", "", "Package file")
 }

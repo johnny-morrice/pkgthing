@@ -21,6 +21,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -33,7 +35,26 @@ var searchCmd = &cobra.Command{
 	Short: "Search pkgthing for packages",
 
 	Run: func(cmd *cobra.Command, args []string) {
+		validateSearchArgs()
 
+		searchKey, err := pkgthing.ParseSearchKey(searchKeyText)
+
+		if err != nil {
+			die(err)
+		}
+
+		term := makeSearchTerm(searchKey)
+
+		pkgthing := makePkgthing()
+		pkgInfo, err := pkgthing.Search(term)
+
+		if err != nil {
+			die(err)
+		}
+
+		for _, info := range pkgInfo {
+			fmt.Println(info)
+		}
 	},
 }
 
