@@ -209,5 +209,5 @@ func (thing *pkgthing) addIpfsBlob(blob []byte) (string, error) {
 }
 
 func (thing *pkgthing) logResponse(resp api.Response) {
-	log.Println(resp)
+	// log.Println(resp)
 }

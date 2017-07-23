@@ -65,6 +65,10 @@ func validateSearchArgs() {
 	if searchTerm == "" || searchKeyText == "" {
 		die(errors.New("Must specify term and field"))
 	}
+
+	if searchKeyText == "system" {
+		system = searchTerm
+	}
 }
 
 func makeSearchTerm(searchKey pkgthing.SearchKey) pkgthing.PackageSearchTerm {
@@ -78,6 +82,7 @@ func makeSearchTerm(searchKey pkgthing.SearchKey) pkgthing.PackageSearchTerm {
 func init() {
 	RootCmd.AddCommand(searchCmd)
 
+	searchCmd.PersistentFlags().StringVar(&system, "system", DEFAULT_SYSTEM, "Computer system")
 	searchCmd.PersistentFlags().StringVar(&searchTerm, "term", "", "Search term")
 	searchCmd.PersistentFlags().StringVar(&searchKeyText, "field", "name", "Search field")
 }

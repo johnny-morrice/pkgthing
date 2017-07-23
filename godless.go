@@ -167,11 +167,19 @@ func readSystemTableName(tableName crdt.TableName) (string, error) {
 }
 
 func systemTable(system string) crdt.TableName {
+	if system == "" {
+		panic("BUG system was empty")
+	}
+
 	return crdt.TableName(__SYSTEM_TABLE_PREFIX + system)
 }
 
 // TODO should be a method probably.
 func metaKey(metaDataKey string) crdt.EntryName {
+	if metaDataKey == "" {
+		panic("BUG metaDataKey was empty")
+	}
+
 	return crdt.EntryName(__META_DATA_PREFIX + metaDataKey)
 }
 
