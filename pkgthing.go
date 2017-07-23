@@ -2,6 +2,7 @@ package pkgthing
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"log"
 
@@ -29,18 +30,36 @@ type MetaDataEntry struct {
 	MetaDataValue string
 }
 
+type SearchMethod uint8
+
+const (
+	SEARCH_WILDCARD = SearchMethod(iota)
+)
+
 type SearchKey uint8
 
 const (
-	SEARCH_NAME_WILDCARD = SearchKey(iota)
+	SEARCH_NAME = SearchKey(iota)
 	SEARCH_SYSTEM
 )
 
+func ParseSearchKey(key string) (SearchKey, error) {
+	switch key {
+	case "name":
+		return SEARCH_NAME, nil
+	case "system":
+		return SEARCH_SYSTEM, nil
+	default:
+		return 0, fmt.Errorf("Unknown SearchKey: %s", key)
+	}
+}
+
 type PackageSearchTerm struct {
-	SearchKey  SearchKey
-	SearchTerm string
-	System     string
-	Keys       []KeyReference
+	SearchKey    SearchKey
+	SearchMethod SearchMethod
+	SearchTerm   string
+	System       string
+	Keys         []KeyReference
 }
 
 type PackageManager interface {

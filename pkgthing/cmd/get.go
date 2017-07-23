@@ -21,7 +21,10 @@
 package cmd
 
 import (
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/johnny-morrice/pkgthing"
 )
 
 // getCmd represents the get command
@@ -29,10 +32,30 @@ var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get a package from pkgthing",
 	Run: func(cmd *cobra.Command, args []string) {
-		panic("not implemented")
+		validateGetArgs()
+
+		info := makePackageInfo()
+
+		pkgthing := makePkgthing()
+		pkgthing.Get(info)
 	},
 }
 
+func validateGetArgs() {
+	if name == "" || system == "" {
+		die(errors.New("Must supply name and system"))
+	}
+}
+
+func makePackageInfo() pkgthing.PackageInfo {
+	return pkgthing.PackageInfo{
+		Name:   name,
+		System: system,
+	}
+}
+
 func init() {
+	addCmd.PersistentFlags().StringVar(&name, "name", "", "Package name")
+
 	RootCmd.AddCommand(getCmd)
 }

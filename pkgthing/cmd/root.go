@@ -50,6 +50,8 @@ func Execute() {
 
 var ipfsUrl string
 var godlessUrl string
+var system string
+var name string
 
 func makePkgthing() pkgthing.PackageManager {
 	ipfs := pkgthing.MakeIpfsStorage(ipfsUrl)
@@ -80,11 +82,16 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.pkgthing.yaml)")
 	RootCmd.PersistentFlags().StringVar(&ipfsUrl, "ipfs", DEFAULT_IPFS_URL, "IPFS API URL")
 	RootCmd.PersistentFlags().StringVar(&godlessUrl, "godless", DEFAULT_GODLESS_URL, "Godless API URL")
+	RootCmd.PersistentFlags().StringVar(&system, "system", DEFAULT_SYSTEM, "Computer system")
 }
 
 // TODO should live in godless
 const DEFAULT_GODLESS_URL = "http://localhost:8085"
+
 const DEFAULT_IPFS_URL = "http://localhost:5001"
+
+// TODO Figure out a canonical way of writing a system name?
+const DEFAULT_SYSTEM = "ubuntu16.04-x86_64"
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {

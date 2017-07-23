@@ -76,8 +76,8 @@ func (builder *searchBuilder) buildQuery() (*query.Query, error) {
 	switch builder.term.SearchKey {
 	case SEARCH_SYSTEM:
 		return builder.systemQuery()
-	case SEARCH_NAME_WILDCARD:
-		return builder.exactNameQuery()
+	case SEARCH_NAME:
+		return builder.nameWildcardQuery()
 	default:
 		return nil, fmt.Errorf("Unknown SearchKey: %v", builder.term.SearchKey)
 	}
@@ -91,7 +91,7 @@ func (builder *searchBuilder) systemQuery() (*query.Query, error) {
 }
 
 // FIXME Sprintf is security hole. We need parametrized queries from godless 0.19.0.
-func (builder *searchBuilder) exactNameQuery() (*query.Query, error) {
+func (builder *searchBuilder) nameWildcardQuery() (*query.Query, error) {
 	queryFormat := "select %s where str_wildcard(@key, \"%s\")"
 	queryText := fmt.Sprintf(queryFormat, systemTable(builder.term.System), builder.term.SearchTerm)
 	return query.Compile(queryText)

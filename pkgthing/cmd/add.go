@@ -21,7 +21,14 @@
 package cmd
 
 import (
+	"io"
+	"io/ioutil"
+	"os"
+
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/johnny-morrice/pkgthing"
 )
 
 // addCmd represents the add command
@@ -29,10 +36,57 @@ var addCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Add a package to pkgthing",
 	Run: func(cmd *cobra.Command, args []string) {
-		panic("not implemented")
+		validateAddArgs()
+
+		file := openPackageFile()
+		defer file.Close()
+
+		pack := makeNewPackage(file)
+
+		pkgthing := makePkgthing()
+		pkgthing.Add(pack)
 	},
+}
+
+var packageFilePath string
+
+func validateAddArgs() {
+	ok := name != ""
+	ok = ok && system != ""
+	ok = ok && packageFilePath != ""
+
+	if !ok {
+		die(errors.New("Must supply name, system, and file"))
+	}
+}
+
+func makeNewPackage(r io.Reader) pkgthing.Package {
+	data, err := ioutil.ReadAll(r)
+
+	if err != nil {
+		die(err)
+	}
+
+	pack := pkgthing.Package{}
+	pack.Name = name
+	pack.System = system
+	pack.Data = data
+	return pack
+}
+
+func openPackageFile() io.ReadCloser {
+	file, err := os.Open(packageFilePath)
+
+	if err != nil {
+		die(err)
+	}
+
+	return file
 }
 
 func init() {
 	RootCmd.AddCommand(addCmd)
+
+	addCmd.PersistentFlags().StringVar(&name, "name", "", "Package name")
+	addCmd.PersistentFlags().StringVar(&packageFilePath, "file", "", "Package file")
 }

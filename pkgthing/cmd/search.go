@@ -21,7 +21,10 @@
 package cmd
 
 import (
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/johnny-morrice/pkgthing"
 )
 
 // searchCmd represents the search command
@@ -30,10 +33,30 @@ var searchCmd = &cobra.Command{
 	Short: "Search pkgthing for packages",
 
 	Run: func(cmd *cobra.Command, args []string) {
-		panic("not implemented")
+
 	},
+}
+
+var searchTerm string
+var searchKeyText string
+
+func validateSearchArgs() {
+	if searchTerm == "" || searchKeyText == "" {
+		die(errors.New("Must specify term and field"))
+	}
+}
+
+func makeSearchTerm(searchKey pkgthing.SearchKey) pkgthing.PackageSearchTerm {
+	return pkgthing.PackageSearchTerm{
+		System:     system,
+		SearchTerm: searchTerm,
+		SearchKey:  searchKey,
+	}
 }
 
 func init() {
 	RootCmd.AddCommand(searchCmd)
+
+	searchCmd.PersistentFlags().StringVar(&searchTerm, "term", "", "Search term")
+	searchCmd.PersistentFlags().StringVar(&searchKeyText, "field", "name", "Search field")
 }
