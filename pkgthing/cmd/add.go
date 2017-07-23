@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -44,7 +45,13 @@ var addCmd = &cobra.Command{
 		pack := makeNewPackage(file)
 
 		pkgthing := makePkgthing()
-		pkgthing.Add(pack)
+		info, err := pkgthing.Add(pack)
+
+		if err != nil {
+			die(err)
+		}
+
+		fmt.Println(info)
 	},
 }
 

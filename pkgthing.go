@@ -103,6 +103,8 @@ func (thing *pkgthing) Get(info PackageInfo) (Package, error) {
 		return Package{}, errors.Wrap(err, failMsg)
 	}
 
+	log.Printf("Found package: %v", pack)
+
 	err = thing.loadPackageData(&pack)
 
 	if err != nil {

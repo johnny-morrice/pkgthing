@@ -2,6 +2,7 @@ package pkgthing
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/johnny-morrice/godless/api"
 	"github.com/johnny-morrice/godless/crdt"
@@ -26,7 +27,7 @@ func (builder *addBuilder) buildQuery() (*query.Query, error) {
 	rowKey := builder.pack.Name
 
 	entries := map[crdt.EntryName]crdt.PointText{
-		"datapath": crdt.PointText(builder.pack.IpfsPath),
+		__DATAPATH_KEY: crdt.PointText(builder.pack.IpfsPath),
 	}
 	row := query.QueryRowJoin{
 		RowKey:  crdt.RowName(rowKey),
@@ -100,6 +101,8 @@ func (builder *searchBuilder) nameWildcardQuery() (*query.Query, error) {
 func readPackage(resp api.Response) (Package, error) {
 	info, err := readPackageInfo(resp)
 
+	log.Print("Read package info")
+
 	if err != nil {
 		return Package{}, err
 	}
@@ -126,9 +129,24 @@ func readPackageInfo(resp api.Response) ([]PackageInfo, error) {
 			return
 		}
 
+		dataentry, err := row.GetEntry(__DATAPATH_KEY)
+
+		if err != nil {
+			return
+		}
+
+		points := dataentry.GetValues()
+
+		if len(points) != 1 {
+			return
+		}
+
+		datapath := points[0].Text()
+
 		info := PackageInfo{
-			System: system,
-			Name:   string(r),
+			System:   system,
+			Name:     string(r),
+			IpfsPath: string(datapath),
 		}
 
 		allInfo = append(allInfo, info)
@@ -139,7 +157,7 @@ func readPackageInfo(resp api.Response) ([]PackageInfo, error) {
 
 func readSystemTableName(tableName crdt.TableName) (string, error) {
 	var system string
-	_, err := fmt.Scanf(systemTablePrefix+"%s", &system)
+	_, err := fmt.Sscanf(string(tableName), __SYSTEM_TABLE_PREFIX+"%s", &system)
 
 	if err != nil {
 		return "", err
@@ -149,13 +167,14 @@ func readSystemTableName(tableName crdt.TableName) (string, error) {
 }
 
 func systemTable(system string) crdt.TableName {
-	return crdt.TableName(systemTablePrefix + system)
+	return crdt.TableName(__SYSTEM_TABLE_PREFIX + system)
 }
 
 // TODO should be a method probably.
 func metaKey(metaDataKey string) crdt.EntryName {
-	return crdt.EntryName(metaDataPrefix + metaDataKey)
+	return crdt.EntryName(__META_DATA_PREFIX + metaDataKey)
 }
 
-const systemTablePrefix = "system_"
-const metaDataPrefix = "meta_"
+const __DATAPATH_KEY = "datapath"
+const __SYSTEM_TABLE_PREFIX = "system_"
+const __META_DATA_PREFIX = "meta_"
