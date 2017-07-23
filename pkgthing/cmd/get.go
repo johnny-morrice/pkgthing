@@ -55,7 +55,7 @@ func makePackageInfo() pkgthing.PackageInfo {
 }
 
 func init() {
-	addCmd.PersistentFlags().StringVar(&name, "name", "", "Package name")
+	getCmd.PersistentFlags().StringVar(&name, "name", "", "Package name")
 
 	RootCmd.AddCommand(getCmd)
 }
