@@ -59,7 +59,7 @@ func (builder *getBuilder) setPackageInfo(info PackageInfo) {
 
 func (builder *getBuilder) buildQuery() (*query.Query, error) {
 	info := builder.info
-	return query.Compile("select ? where str_eq(@key, ?)", systemTable(info.System), info.Name)
+	return query.Compile("select ?? where str_eq(@key, ?)", systemTable(info.System), info.Name)
 }
 
 type searchBuilder struct {
@@ -82,12 +82,12 @@ func (builder *searchBuilder) buildQuery() (*query.Query, error) {
 }
 
 func (builder *searchBuilder) systemQuery() (*query.Query, error) {
-	return query.Compile("select ?", systemTable(builder.term.System))
+	return query.Compile("select ??", systemTable(builder.term.System))
 }
 
 // FIXME Sprintf is security hole. We need parametrized queries from godless 0.19.0.
 func (builder *searchBuilder) nameWildcardQuery() (*query.Query, error) {
-	return query.Compile("select ? where str_glob(@key, ?)", systemTable(builder.term.System), builder.term.SearchTerm)
+	return query.Compile("select ?? where str_glob(@key, ?)", systemTable(builder.term.System), builder.term.SearchTerm)
 }
 
 func readPackage(resp api.Response) (Package, error) {
@@ -158,12 +158,12 @@ func readSystemTableName(tableName crdt.TableName) (string, error) {
 	return system, nil
 }
 
-func systemTable(system string) crdt.TableName {
+func systemTable(system string) string {
 	if system == "" {
 		panic("BUG system was empty")
 	}
 
-	return crdt.TableName(__SYSTEM_TABLE_PREFIX + system)
+	return __SYSTEM_TABLE_PREFIX + system
 }
 
 // TODO should be a method probably.
