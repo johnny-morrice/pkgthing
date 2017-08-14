@@ -57,12 +57,9 @@ func (builder *getBuilder) setPackageInfo(info PackageInfo) {
 	builder.info = info
 }
 
-// FIXME Sprintf is security hole. We need parametrized queries from godless 0.19.0.
 func (builder *getBuilder) buildQuery() (*query.Query, error) {
 	info := builder.info
-	queryFormat := "select %s where str_eq(@key, \"%s\")"
-	queryText := fmt.Sprintf(queryFormat, systemTable(info.System), info.Name)
-	return query.Compile(queryText)
+	return query.Compile("select ? where str_eq(@key, ?)", systemTable(info.System), info.Name)
 }
 
 type searchBuilder struct {
@@ -84,18 +81,13 @@ func (builder *searchBuilder) buildQuery() (*query.Query, error) {
 	}
 }
 
-// FIXME Sprintf is security hole. We need parametrized queries from godless 0.19.0.
 func (builder *searchBuilder) systemQuery() (*query.Query, error) {
-	queryFormat := "select %s"
-	queryText := fmt.Sprintf(queryFormat, systemTable(builder.term.System))
-	return query.Compile(queryText)
+	return query.Compile("select ?", systemTable(builder.term.System))
 }
 
 // FIXME Sprintf is security hole. We need parametrized queries from godless 0.19.0.
 func (builder *searchBuilder) nameWildcardQuery() (*query.Query, error) {
-	queryFormat := "select %s where str_wildcard(@key, \"%s\")"
-	queryText := fmt.Sprintf(queryFormat, systemTable(builder.term.System), builder.term.SearchTerm)
-	return query.Compile(queryText)
+	return query.Compile("select ? where str_glob(@key, ?)", systemTable(builder.term.System), builder.term.SearchTerm)
 }
 
 func readPackage(resp api.Response) (Package, error) {
