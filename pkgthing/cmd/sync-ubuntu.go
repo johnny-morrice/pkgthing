@@ -33,7 +33,13 @@ var syncUbuntu = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ubuntu := &pkgthing.Ubuntu{}
 		thing := makePkgthing()
-		err := pkgthing.AddAllPackages(ubuntu, ubuntu, thing)
+
+		syncer := pkgthing.Syncer{
+			Adder:  thing,
+			Getter: ubuntu,
+			Lister: ubuntu,
+		}
+		err := syncer.AddAllPackages()
 
 		if err != nil {
 			die(err)
