@@ -25,6 +25,16 @@ type PackageInfo struct {
 	Signatures []Signature
 }
 
+func (info PackageInfo) GetMetaData(key string) string {
+	for _, entry := range info.MetaData {
+		if entry.MetaDataKey == key {
+			return entry.MetaDataValue
+		}
+	}
+
+	return ""
+}
+
 type MetaDataEntry struct {
 	MetaDataKey   string
 	MetaDataValue string
