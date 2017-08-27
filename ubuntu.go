@@ -12,6 +12,7 @@ import (
 )
 
 type Ubuntu struct {
+	tempDir string
 }
 
 func (ubuntu *Ubuntu) GetInstalledPackages() ([]PackageInfo, error) {
@@ -36,26 +37,17 @@ func (ubuntu *Ubuntu) GetInstalledPackages() ([]PackageInfo, error) {
 func (ubuntu *Ubuntu) Get(info PackageInfo) (Package, error) {
 	const errMsg = "Ubuntu.Get failed"
 
-	dirname, err := ioutil.TempDir(__TEMP_ROOT, __TEMP_PREFIX)
-
-	if err == nil {
-		log.Print("Failed to create temporary directory prior to repacking deb file")
-	} else {
-		err := os.Chdir(dirname)
-
-		if err != nil {
-			log.Print("Failed to change directory prior to repacking deb file")
-		}
-	}
+	ubuntu.chdirTemp()
 
 	cmd := exec.Command(__FAKEROOT_COMMAND, __FAKEROOT_ARG, __REPACK_COMMAND, info.Name)
-	err = cmd.Run()
+	err := cmd.Run()
 
 	if err != nil {
 		return Package{}, errors.Wrap(err, errMsg)
 	}
 
-	contents, err := ioutil.ReadFile(ubuntu.debFileName(info))
+	debFileName := ubuntu.debFileName(info)
+	contents, err := ioutil.ReadFile(debFileName)
 
 	if err != nil {
 		return Package{}, errors.Wrap(err, errMsg)
@@ -78,7 +70,7 @@ func (ubuntu *Ubuntu) parseDpkgList(infoText []byte) ([]PackageInfo, error) {
 		fields := bytes.Fields(l)
 		if len(fields) < __DPKG_FIELD_SIZE {
 			// TODO return error?
-			log.Print("Missing fields from dpkg line: %s", string(l))
+			log.Printf("Missing fields from dpkg line: %s", string(l))
 			continue
 		}
 
@@ -100,12 +92,16 @@ func (ubuntu *Ubuntu) parseDpkgList(infoText []byte) ([]PackageInfo, error) {
 				MetaDataKey:   VERSION_KEY,
 				MetaDataValue: version,
 			},
+			MetaDataEntry{
+				MetaDataKey:   ARCHITECTURE_KEY,
+				MetaDataValue: architecture,
+			},
 		}
 
 		dpkgInfo := PackageInfo{
 			Name:     name,
 			MetaData: metadata,
-			System:   ubuntu.SystemName() + "_" + architecture,
+			System:   ubuntu.SystemName(),
 		}
 
 		info = append(info, dpkgInfo)
@@ -118,7 +114,7 @@ func (ubuntu *Ubuntu) debFileName(info PackageInfo) string {
 	parts := []string{
 		info.Name,
 		info.GetMetaData(VERSION_KEY),
-		info.System,
+		info.GetMetaData(ARCHITECTURE_KEY),
 	}
 	return strings.Join(parts, "_") + ".deb"
 }
@@ -128,7 +124,30 @@ func (ubuntu *Ubuntu) SystemName() string {
 	return "ubuntu16.04"
 }
 
-const VERSION_KEY = "package_version"
+func (ubuntu *Ubuntu) chdirTemp() {
+	if ubuntu.tempDir != "" {
+		return
+	}
+
+	dirname, err := ioutil.TempDir(__TEMP_ROOT, __TEMP_PREFIX)
+
+	if err == nil {
+		err := os.Chdir(dirname)
+
+		if err != nil {
+			log.Print("Failed to change directory prior to repacking deb file")
+			return
+		}
+	} else {
+		log.Print("Failed to create temporary directory prior to repacking deb file")
+		return
+	}
+
+	ubuntu.tempDir = dirname
+}
+
+const VERSION_KEY = "version"
+const ARCHITECTURE_KEY = "architecture"
 const __DPKG_STATUS_FIELD = 0
 const __DPKG_NAME_FIELD = 1
 const __DPKG_VERSION_FIELD = 2
