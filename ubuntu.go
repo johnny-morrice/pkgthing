@@ -84,6 +84,8 @@ func (ubuntu *Ubuntu) parseDpkgList(infoText []byte) ([]PackageInfo, error) {
 		}
 
 		name := string(fields[__DPKG_NAME_FIELD])
+		nameParts := strings.Split(name, __DPKG_NAME_DECORATOR)
+		name = nameParts[0]
 		version := string(fields[__DPKG_VERSION_FIELD])
 		architecture := string(fields[__DPKG_ARCH_FIELD])
 
@@ -148,6 +150,7 @@ func (ubuntu *Ubuntu) chdirTemp() {
 
 const VERSION_KEY = "version"
 const ARCHITECTURE_KEY = "architecture"
+const __DPKG_NAME_DECORATOR = ":"
 const __DPKG_STATUS_FIELD = 0
 const __DPKG_NAME_FIELD = 1
 const __DPKG_VERSION_FIELD = 2
