@@ -68,6 +68,10 @@ func validateSearchArgs() {
 
 	if searchKeyText == "system" {
 		system = searchTerm
+	} else {
+		if system == "" {
+			die(errors.New("Must specify system"))
+		}
 	}
 }
 
