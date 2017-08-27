@@ -32,7 +32,8 @@ var syncUbuntu = &cobra.Command{
 	Short: "Add all packages installed on an Ubuntu system",
 	Run: func(cmd *cobra.Command, args []string) {
 		ubuntu := &pkgthing.Ubuntu{}
-		err := ubuntu.AddAllPackages()
+		thing := makePkgthing()
+		err := pkgthing.AddAllPackages(ubuntu, ubuntu, thing)
 
 		if err != nil {
 			die(err)

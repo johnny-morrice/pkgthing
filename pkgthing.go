@@ -62,10 +62,26 @@ type PackageSearchTerm struct {
 	Keys         []KeyReference
 }
 
-type PackageManager interface {
+type PackageGetter interface {
 	Get(info PackageInfo) (Package, error)
+}
+
+type PackageAdder interface {
 	Add(pack Package) (PackageInfo, error)
+}
+
+type PackageSearcher interface {
 	Search(term PackageSearchTerm) ([]PackageInfo, error)
+}
+
+type PackageManager interface {
+	PackageAdder
+	PackageGetter
+	PackageSearcher
+}
+
+type PackageLister interface {
+	GetInstalledPackages() ([]PackageInfo, error)
 }
 
 type Options struct {

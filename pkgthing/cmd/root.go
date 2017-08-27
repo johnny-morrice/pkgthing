@@ -90,8 +90,7 @@ const DEFAULT_GODLESS_URL = "http://localhost:8085"
 
 const DEFAULT_IPFS_URL = "http://localhost:5001"
 
-// TODO Figure out a canonical way of writing a system name?
-const DEFAULT_SYSTEM = "ubuntu16.04-x86_64"
+const DEFAULT_SYSTEM = ""
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
